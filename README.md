@@ -1,0 +1,1 @@
+# Spellify.js
