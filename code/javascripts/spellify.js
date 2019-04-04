@@ -165,10 +165,19 @@ define(function(){
 		this._queryForArray = function(_iterables, _leftIterators, currentObject, currentWordList){
 
 			_leftIterators=_leftIterators.slice(1);
+			var noFixedChar=true;
+			for(var j=0;j<_leftIterators.length && noFixedChar;++j){
+				if(_leftIterators[j]!=='*' && _leftIterators[j]!=='?'){
+					noFixedChar=false;
+				}
+				
+			}
+			
+			
 			for(var i=0;i<_iterables.length;++i){
 				
-				if(_iterables[i]===''){
-					if(currentObject.isWord){
+				if(_iterables[i]==='' ){
+					if(noFixedChar && currentObject.isWord){
 						currentWordList.add(currentObject.text);
 					}
 					this._query(_leftIterators, currentObject, currentWordList);
