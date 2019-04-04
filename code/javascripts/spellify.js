@@ -102,7 +102,8 @@ define(function(){
 			
 			this.spellChecker=new SpellChecker({
 					wordsTree: this.wordsTree,
-					traversalChars: Array.from(this.traversalCharsSet)
+					traversalChars: Array.from(this.traversalCharsSet),
+					queryEngine: this.queryEngine
 				});
 			this.createSelfParseList();
 			this.initialized=true;
@@ -116,11 +117,44 @@ define(function(){
 	}
 	
 	
+	var characterProbabilityMap={
+		
+		q : ['q','w','s','a'],
+		w : ['q','w','s','a', 'e', 'd'],
+		e : ['r','f','s','w', 'e', 'd'],
+		r : ['r','f','t','g', 'e', 'd'],
+		t : ['r','f','t','g', 'y', 'h'],
+		y : ['u','j','t','g', 'y', 'h'],
+		u : ['u','j','i','k', 'y', 'h'],
+		i : ['u','j','i','k', 'o', 'k'],
+		o : ['p','l','i','k', 'o', 'k'],
+		a : ['q','a','z','w','s','x'],
+		s : ['q','a','z','w','s','x','e','d','c'],
+		d : ['r','f','v','w','s','x','e','d','c'],
+		f : ['r','f','v','t','g','b','e','d','c'],
+		g : ['r','f','v','t','g','b','y','h','b'],
+		h : ['u','j','m','t','g','b','y','h','b'],
+		j : ['u','j','m','i','k','y','h','b'],
+		k : ['u','j','m','i','k','o','l'],
+		l : ['p','i','k','o','l'],
+		z : ['a','z','s','x'],
+		x : ['a','z','s','x','d','c'],
+		c : ['f','v','s','x','d','c'],
+		v : ['f','v','g','b','d','c'],
+		b : ['f','v','g','b','h','n'],
+		n : ['j','m','g','b','h','n'],
+		m : ['j','m','l'],
+		' ': ['z','x','c','v','b','n','m']
+		
+	}
+	
+	
 	var SpellChecker = function(options){
 		
 		this.__init=function(options){
 			this.wordsTree=options.wordsTree;
 			this.traversalChars=options.traversalChars;
+			 this.queryEngine=options.queryEngine;
 		}
 		
 		this._check = function(letterArray){
@@ -138,17 +172,46 @@ define(function(){
 			return true;
 		}
 		
+		this.getSuggestions = function(word){
+			var chars=word.split(''),
+				length=chars.length,
+				charClosure=new Set();
+				
+			for(var i=0;i<length;++i){
+				var _map=characterProbabilityMap[chars[i]];
+				
+				if(_map){
+					for(var j=0;j<_map.length;++j){
+						charClosure.add(_map[j]);
+					}					
+				}
+				
+				if(i<1 || i> length - 2){
+					chars[i]='?'
+				}else{
+					chars[i]='.'
+				}
+				
+			}
+			
+			return this.queryEngine.query('??'+chars.join('')+'??',Array.from(charClosure));
+			
+		}
 		
 		this.checkSpelling = function(_string){
 			var words=_string.split(' '),
 				incorrectWords=[];
-			
+				suggestions={};
+				
 			for(var i=0;i<words.length;++i){
 				if(!this._check(words[i].trim().split(''), this.wordsTree)){
 					incorrectWords.push(words[i]);
+					if(!suggestions[words[i]]){
+						suggestions[words[i]]=this.getSuggestions(words[i]);
+					}
 				}
 			}
-			return { correct:!incorrectWords.length, incorrect: incorrectWords}
+			return { correct:!incorrectWords.length, incorrect: incorrectWords, suggestions:suggestions}
 		}
 		
 		this.__init(options);
