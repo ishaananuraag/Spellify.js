@@ -45,9 +45,9 @@ define(function(){
 			if(!this.initialized){
 				this._initialize();
 			}
-			
+		
 			return this.queryEngine.query(word,characterClosure);
-
+		
 		}		
 			
 		this._add=function(leftArray, currentTraversingObject, text){
@@ -86,12 +86,24 @@ define(function(){
 				this._addToWordList(currentTraversingObject[character]);
 			}
 		}
-			
+
+		this.spellCheck = function(line){
+			if(!this.initialized){
+				this._initialize();
+			}
+			return this.spellChecker.checkSpelling(line);
+		}
+		
 		this._initialize = function(){
 			this.queryEngine=new QueryEngine({
-						wordsTree: this.wordsTree,
-						traversalChars: Array.from(this.traversalCharsSet)
-					});
+					wordsTree: this.wordsTree,
+					traversalChars: Array.from(this.traversalCharsSet)
+				});
+			
+			this.spellChecker=new SpellChecker({
+					wordsTree: this.wordsTree,
+					traversalChars: Array.from(this.traversalCharsSet)
+				});
 			this.createSelfParseList();
 			this.initialized=true;
 		}		
@@ -103,6 +115,45 @@ define(function(){
 		this.__init();
 	}
 	
+	
+	var SpellChecker = function(options){
+		
+		this.__init=function(options){
+			this.wordsTree=options.wordsTree;
+			this.traversalChars=options.traversalChars;
+		}
+		
+		this._check = function(letterArray){
+			var _ittrLength=letterArray.length,
+				currentObject=this.wordsTree;
+			
+			for(var i=0;i<_ittrLength;++i)
+			{
+				if(currentObject[letterArray[i]]){
+					currentObject=currentObject[letterArray[i]];
+				}else{
+					return false;
+				}
+			}
+			return true;
+		}
+		
+		
+		this.checkSpelling = function(_string){
+			var words=_string.split(' '),
+				incorrectWords=[];
+			
+			for(var i=0;i<words.length;++i){
+				if(!this._check(words[i].trim().split(''), this.wordsTree)){
+					incorrectWords.push(words[i]);
+				}
+			}
+			return { correct:!incorrectWords.length, incorrect: incorrectWords}
+		}
+		
+		this.__init(options);
+		
+	}
 	
 	var QueryEngine = function(options){
 		
@@ -183,9 +234,9 @@ define(function(){
 			
 			var wordSet=new Set();
 			this._characterClosure=_characterClosure || _traversalChars;
-			console.time('query');
+			
 			this._query(_iterables,this.wordsTree,wordSet);
-			console.timeEnd('query');
+
 			delete this._characterClosure;
 			return Array.from(wordSet);
 			
@@ -199,32 +250,6 @@ define(function(){
 	spellify.configure({
 		dictionaries: ['default']
 	})
-	
-
-		
-	/*
-	
-	_addToWordList= function(currentPath, currentTraversingObject){
-		if(currentTraversingObject.isWord){
-			selfParsedWordList.push(currentPath.join(''));
-		}
-		for(var i=0;i<traversalLength;i++){
-			var character=traversalChars[i];
-			if(currentTraversingObject[character]){
-				_addToWordList(currentPath.concat([character]),currentTraversingObject[character]);
-			}
-		}
-	}
-	
-	*/
-	
-	//console.time('wholeTreeTraversal');
-	//createSelfParseList();
-	//console.timeEnd('wholeTreeTraversal');
-	
-	
-	
-	
 	
 	window.spellify=spellify;
 	
